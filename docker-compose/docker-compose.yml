@@ -1,0 +1,74 @@
+version: "3.8"
+services:
+
+  videos-mysql:
+    image: mysql:8
+    container_name: videos-mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - streaming-network
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DATABASE=Videos
+
+  dbcontroller:
+    image: videostreaming9/dbcontroller
+    container_name: dbcontroller
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    networks:
+      - streaming-network
+    depends_on:
+      - videos-mysql
+
+  authentication:
+    image: videostreaming9/authentication
+    container_name: authentication
+    networks:
+      - streaming-network
+    ports:
+      - "8070:8070"
+    depends_on:
+      - dbcontroller
+
+  storage:
+    image: videostreaming9/storage
+    container_name: storage
+    networks:
+      - streaming-network
+    ports:
+      - "8060:8060"
+
+  uploadservice:
+    image: videostreaming9/uploadservice
+    container_name: uploadservice
+    networks:
+      - streaming-network
+    ports:
+      - "8080:8080"
+    depends_on:
+      - storage
+      - authentication
+      - dbcontroller
+
+  streamingservice:
+    image: videostreaming9/streamingservice
+    container_name: streamingservice
+    networks:
+      - streaming-network
+    ports:
+      - "8050:8050"
+    depends_on:
+      - authentication
+      - dbcontroller
+
+volumes:
+  db_data: { }
+
+networks:
+  streaming-network:
